@@ -831,10 +831,10 @@ class Interpreter:
                 self.execute(c).value.env["value"] for c in ast.children[1].children
             ]
             return (
-                name.value[*index]
+                name.value.env["value"][*index]
                 if len(index) > 1
                 else (
-                    name.value[index[0]]
+                    name.value.env["value"][index[0]]
                     if not name.type == "object"
                     else name.value.env[index[0]]
                 )
