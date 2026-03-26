@@ -841,7 +841,7 @@ class Interpreter:
             )
         elif ast.kind == "IF":
             condition = self.execute(ast.children[0])
-            if condition.value.value:
+            if condition.value.env["value"]:
                 code = self.execute(ast.children[1])
                 return code
             elif len(ast.children) > 2:
@@ -850,7 +850,7 @@ class Interpreter:
             return Value("nothing", Object({}))
         elif ast.kind == "WHILE":
             code = Value("nothing", Object({}))
-            while self.execute(ast.children[0]).value.value:
+            while self.execute(ast.children[0]).value.env["value"]:
                 code = self.execute(ast.children[1])
             return code
         elif ast.kind == "OBJ":
@@ -869,4 +869,5 @@ if not result.failed():
     i.run()
 else:
     print(result.value, result.ok, result.backtrack, result.message, result.index)
+
 
