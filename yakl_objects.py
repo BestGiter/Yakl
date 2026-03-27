@@ -86,3 +86,5 @@ def make_boolean(context, x):
                                                           "__equ": lambda env, other: make_boolean(context, env[-1]["this"].value.env["value"]==other.value.env["value"]),
                                                           "__neq": lambda env, other: make_boolean(context, env[-1]["this"].value.env["value"]!=other.value.env["value"]),
                                                           })
+def make_function(context, params, code):
+    return make_object(context, "function", {"params": params, "code": code, "env": context.env.copy()+[{}]}, {"__call": lambda env, *x: context.pycall(env[-1]["this"], x)})
