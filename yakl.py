@@ -362,12 +362,12 @@ class Parser:
             self.i = save
             if self.match("["):
                 self.skip_whitespace()
-                params = self.parse_items()
-                if not params.failed():
+                expr = self.parse_expression()
+                if not expr.failed():
                     self.skip_whitespace()
                     if self.match("]"):
                         value = self.Ok(
-                            Node("INDEX", None, {}, [value.value, params.value])
+                            Node("INDEX", None, {}, [value.value, expr.value])
                         )
                         continue
             self.i = save
@@ -666,13 +666,30 @@ class Interpreter:
             ),
             "len": Value(
                 "python-function",
-                lambda x: Value("number", Number(len(x.value.value))),
+                Object({"pyfunc": (lambda env, x: make_number(self, len(x.value.env["value"]))), "env":[{}]}),
+            ),
+            "extend": Value(
+                "python-function",
+                Object({"pyfunc": self.extend, "env":[{}]}),
+            ),
+            "contract": Value(
+                "python-function",
+                Object({"pyfunc": self.contract, "env":[{}]}),
             ),
             "nothing": Value("nothing", Object({})),
             "false": make_boolean(self, False),
             "true": make_boolean(self, True),
         })
-
+    def raw(self, x):
+        if not isinstance(x, Value):
+            return True
+        return False
+    def extend(self, env, list_, item):
+        list_.value.env["value"].append(item)
+        return list_
+    def contract(self, env, list_):
+        list_.value.env["value"].pop()
+        return list_
     def print_value(self, env, x):
         func = x.value.env.get("__repr")
         if func:
@@ -700,6 +717,7 @@ class Interpreter:
         x = len(self.env) - 1
         while x >= 0:
             if name in self.env[x]:
+                if self.raw(self.env[x][name]): return Value("python-object", Object({}))
                 return self.env[x][name]
             x -= 1
         self.env[-1][name] = Value("nothing", Object({}))
@@ -737,7 +755,7 @@ class Interpreter:
         elif ast.kind == "LIST":
             return Value(
                 "list",
-                Object({"value": [self.execute(c) for c in ast.children[0].children]}),
+                Object({i: self.execute(c) for i, c in enumerate(ast.children[0].children)}),
             )
         elif ast.kind == "ASSIGN":
             val = self.execute(ast.children[1])
@@ -817,18 +835,12 @@ class Interpreter:
             return self.call(name, args)
         elif ast.kind == "INDEX":
             name = self.execute(ast.children[0])
-            index = [
-                self.execute(c).value.env["value"] for c in ast.children[1].children
-            ]
-            return (
-                name.value.env["value"][*index]
-                if len(index) > 1
-                else (
-                    name.value.env["value"][index[0]]
-                    if not name.type == "object"
-                    else name.value.env[index[0]]
-                )
+            index = self.execute(ast.children[1])
+            value =  (
+                name.value.env[index.value.env["value"]]
             )
+            if self.raw(value): return Value("python-object", Object({}))
+            return value
         elif ast.kind == "IF":
             condition = self.execute(ast.children[0])
             if condition.value.env["value"]:
