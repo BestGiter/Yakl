@@ -810,17 +810,7 @@ class Interpreter:
             else:
                 raise AttributeError("No __les")
         elif ast.kind == "FUNC":
-            return Value(
-                "function",
-                Object(
-                    {
-                        "params": [c.value for c in ast.children[0].children],
-                        "code": ast.children[1],
-                        "env": self.env.copy(),
-                        "__call": lambda env, *x: self.pycall(env["this"], x),
-                    }
-                ),
-            )
+            return make_function(self, [c.value for c in ast.children[0].children], ast.children[1])
         elif ast.kind == "CALL":
             name = self.execute(ast.children[0])
             args = [self.execute(c) for c in ast.children[1].children]
