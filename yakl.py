@@ -2,13 +2,6 @@ from yakl_objects import *
 import importlib.util
 import sys
 
-
-
-
-
-
-
-
 def import_python_file(path):
    name = path.replace("/", "_").replace("\\", "_")
    spec = importlib.util.spec_from_file_location(name, path)
@@ -17,34 +10,13 @@ def import_python_file(path):
    spec.loader.exec_module(module)
    return module
 
-
-
-
-
-
-
-
 def get_file(place):
    content = ""
    with open(place, "r") as f:
        content = f.read()
    return content
 
-
-
-
-
-
-
-
 code = get_file("main.yakl")
-
-
-
-
-
-
-
 
 class Node:
    def __init__(self, k, v, e, c):
@@ -53,18 +25,8 @@ class Node:
        self.extra = e
        self.children = c
 
-
-
-
    def __repr__(self):
        return f"Node({repr(self.kind)}, {repr(self.value)}, {repr(self.extra)}, {repr(self.children)})"
-
-
-
-
-
-
-
 
 class Result:
    def __init__(self, ok, backtrack, value, message=None, index=None):
@@ -73,38 +35,14 @@ class Result:
        self.value = value
        self.message = message
        self.index = index
-
-
-
-
    def failed(self):
        return not self.ok
-
-
-
-
    def backtracked(self):
        return self.backtrack
-
-
-
-
    def errored(self):
        return not self.ok and not self.backtrack
-
-
-
-
    def __repr__(self):
        return f"Result({repr(self.ok)}, {repr(self.backtrack)}, {repr(self.value)}, {repr(self.message)}, {repr(self.index)})"
-
-
-
-
-
-
-
-
 class Parser:
    def __init__(self, code):
        self.code = code
@@ -940,18 +878,23 @@ class Interpreter:
            return True
        return False
    def extend(self, env, list_, item):
-       list_.value.env["value"].append(item)
+       list_.value.env[len(get_value(list_))] = item
        return list_
    def contract(self, env, list_):
-       list_.value.env["value"].pop()
+       del list_.value.env[len(get_value(list_))-1]
        return list_
    def print_value(self, env, x):
+       print(self.repr_value(x), end="")
+       return Value("nothing", Object({}))
+   def repr_value(self, x):
        func = x.value.env.get("__repr")
        if func:
-           print(self.call(func, []), end="")
+           y = self.call(func, [])
+           if isinstance(y, Value):
+               return self.repr_value(y)
+           return y
        else:
-           print(f"<object '{x.type}'>", end="")
-       return Value("nothing", Object({}))
+           return f"<object '{x.type}'>"
 
 
 
@@ -1113,8 +1056,10 @@ class Interpreter:
            name = self.execute(ast.children[0])
            index = self.execute(ast.children[1])
            value =  (
-               name.value.env[get_value(index)]
+               name.value.env.get(get_value(index))
            )
+           if not value:
+               name.value.env[get_value(index)] = Value("nothing", Object({}))
            if self.raw(value): return Value("python-object", Object({}))
            return value
        elif ast.kind == "IF":
@@ -1134,11 +1079,10 @@ class Interpreter:
        elif ast.kind == "OBJ":
            obj_scope = {}
            self.env.append(obj_scope)
-           obj_scope["this"] = Value("object", Object(obj_scope))
            self.execute(ast.children[0])
+           obj = make_object(self, "object", obj_scope, {})
            self.env.pop()
-           return obj_scope["this"]
-
+           return obj
 
 
 
