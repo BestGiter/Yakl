@@ -18,7 +18,7 @@ class Value:
 
 
 def make_object(context, name, init, methods):
-   obj_env = dict(init)
+   obj_env = init
    obj = Value(name, Object(obj_env))
    obj_env["this"] = obj
    for k, v in methods.items():
@@ -45,7 +45,7 @@ def make_number(context, x):
 
 def make_string(context, x):
    return make_object(context, "string", {"length": len(x)}|{i: make_character(context, xs) for i, xs in enumerate(x)}, {"__repr": lambda env: get_value(env[-1]["this"]),
-                                                        "__add": lambda env, other: make_string(context, "".join(get_value(env[-1]["this"])+get_value(other))),
+                                                        "__add": lambda env, other: make_string(context, str(get_value(env[-1]["this"])+str(get_value(other)))),
                                                         "__equ": lambda env, other: make_boolean(context, get_value(env[-1]["this"])==get_value(other)),
                                                         "__neq": lambda env, other: make_boolean(context, get_value(env[-1]["this"])!=get_value(other)),
                                                         })
@@ -61,7 +61,7 @@ def make_boolean(context, x):
                                                          "__neq": lambda env, other: make_boolean(context, env[-1]["this"].value.env["value"]!=other.value.env["value"]),
                                                          })
 def make_function(context, params, code):
-   return make_object(context, "function", {"params": params, "code": code, "env": context.env.copy()+[{}]}, {"__call": lambda env, *x: context.pycall(env[-1]["this"], x)})
+   return make_object(context, "function", {"params": params, "code": code, "env": context.env+[{}]}, {"__call": lambda env, *x: context.pycall(env[-1]["this"], x)})
 
 
 def get_string_value(string):
