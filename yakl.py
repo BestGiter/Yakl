@@ -972,10 +972,7 @@ class Interpreter:
        elif ast.kind == "STRING":
            return make_string(self, ast.value)
        elif ast.kind == "LIST":
-           return Value(
-               "list",
-               Object({i: self.execute(c) for i, c in enumerate(ast.children[0].children)}),
-           )
+           return make_list(self, [self.execute(c) for i, c in enumerate(ast.children[0].children)])
        elif ast.kind == "ASSIGN":
            val = self.execute(ast.children[1])
            self.set_(self.execute(ast.children[0]), val)
