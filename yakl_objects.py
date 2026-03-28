@@ -26,7 +26,8 @@ def make_object(context, name, init, methods):
    return obj
 
 
-
+def make_list(context, x):
+   return make_object(context, "list", {i: xs for i, xs in enumerate(x)}, {"__repr": lambda env: "["+(", ".join([context.repr_value(x) for x in get_value(env[-1]["this"])]))+"]"})
 
 def make_number(context, x):
    return make_object(context, "number", {"value": x}, {"__repr": lambda env: str(env[-1]["this"].value.env["value"]),
@@ -69,7 +70,7 @@ def get_string_value(string):
 
 
 def get_list_value(string):
-   return [v.value.env["value"] for k, v in string.value.env.items() if isinstance(k, int)]
+   return [v for k, v in string.value.env.items() if isinstance(k, int)]
 
 
 
